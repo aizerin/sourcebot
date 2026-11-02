@@ -4,11 +4,22 @@ import { getCustomOidcProvider, isCustomOidcSignInAllowed } from './customOidcPr
 
 const mocks = vi.hoisted(() => ({
     env: {} as Record<string, unknown>,
+    existingEmails: [] as string[],
 }));
 
 vi.mock('@sourcebot/shared', () => ({
     env: mocks.env,
-    createLogger: () => ({ warn: vi.fn() }),
+    createLogger: () => ({ warn: vi.fn(), info: vi.fn() }),
+}));
+
+vi.mock('@/prisma', () => ({
+    __unsafePrisma: {},
+}));
+
+vi.mock('@/lib/encryptedPrismaAdapter', () => ({
+    findUserByEmail: vi.fn(async (_prisma: unknown, email: string) =>
+        mocks.existingEmails.includes(email) ? { id: email, email } : null
+    ),
 }));
 
 const setEnv = (overrides: Record<string, unknown> = {}) => {
@@ -38,6 +49,7 @@ const getConfig = () => {
 describe('getCustomOidcProvider', () => {
     beforeEach(() => {
         setEnv();
+        mocks.existingEmails = [];
     });
 
     test.each(['AUTH_CUSTOM_CLIENT_ID', 'AUTH_CUSTOM_CLIENT_SECRET', 'AUTH_CUSTOM_ISSUER'])('returns null when %s is not set', (key) => {
@@ -83,6 +95,46 @@ describe('getCustomOidcProvider', () => {
             name: 'jdoe',
             email: 'jane.doe@example.com',
             image: null,
+        });
+    });
+
+    describe('fallback email claim', () => {
+        const profile = { sub: 'subject', email: 'Jane.Doe@example.com', preferred_username: 'jdoe@corp.example.com' };
+        const resolveEmail = async (p: Record<string, unknown> = profile, tokens = {}) => (await getConfig().profile!(p, tokens)).email;
+
+        beforeEach(() => {
+            setEnv({ AUTH_CUSTOM_FALLBACK_EMAIL_CLAIM: 'preferred_username' });
+        });
+
+        test('keeps the email claim when a user matches it', async () => {
+            mocks.existingEmails = ['jane.doe@example.com', 'jdoe@corp.example.com'];
+            expect(await resolveEmail()).toBe('Jane.Doe@example.com');
+        });
+
+        test('uses the fallback claim when only it matches a user', async () => {
+            mocks.existingEmails = ['jdoe@corp.example.com'];
+            expect(await resolveEmail()).toBe('jdoe@corp.example.com');
+        });
+
+        test('keeps the email claim when no user matches', async () => {
+            expect(await resolveEmail()).toBe('Jane.Doe@example.com');
+        });
+
+        test('reads the fallback claim from the id token when userinfo omits it', async () => {
+            mocks.existingEmails = ['jdoe@corp.example.com'];
+            const idToken = `header.${Buffer.from(JSON.stringify({ preferred_username: 'jdoe@corp.example.com' })).toString('base64url')}.signature`;
+            expect(await resolveEmail({ sub: 'subject', email: 'jane.doe@example.com' }, { id_token: idToken })).toBe('jdoe@corp.example.com');
+        });
+
+        test('ignores a fallback claim that is not an email', async () => {
+            mocks.existingEmails = ['jdoe'];
+            expect(await resolveEmail({ ...profile, preferred_username: 'jdoe' })).toBe('Jane.Doe@example.com');
+        });
+
+        test('is disabled without the setting', async () => {
+            setEnv();
+            mocks.existingEmails = ['jdoe@corp.example.com'];
+            expect(await resolveEmail()).toBe('Jane.Doe@example.com');
         });
     });
 

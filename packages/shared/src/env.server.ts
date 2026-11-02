@@ -157,6 +157,9 @@ const options = {
         AUTH_CUSTOM_ALLOW_ACCOUNT_LINKING: booleanSchema
             .default('false')
             .describe('When enabled, a custom provider account is linked to an existing user with the same email address.'),
+        AUTH_CUSTOM_FALLBACK_EMAIL_CLAIM: z.string()
+            .optional()
+            .describe('Claim (e.g. preferred_username) used as the email address when no user matches the email claim but one matches this claim.'),
 
         /**
          * Relative time from now in seconds when to expire the session.

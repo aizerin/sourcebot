@@ -41,6 +41,9 @@ Register `<AUTH_URL>/api/auth/callback/custom` as the redirect URI of the client
 | `AUTH_CUSTOM_CHECKS` | `pkce,state` | Comma separated checks performed during the authorization code flow: `pkce`, `state`, `nonce`. |
 | `AUTH_CUSTOM_FETCH_USERINFO` | `false` | Read the user profile from the userinfo endpoint instead of the id token claims. Enable it when the id token does not contain the `email` claim. |
 | `AUTH_CUSTOM_ALLOW_ACCOUNT_LINKING` | `false` | Link the account to an existing user with the same email address. Only enable it when the identity provider verifies email addresses. |
+| `AUTH_CUSTOM_FALLBACK_EMAIL_CLAIM` | - | Claim holding an alternative email address, e.g. `preferred_username`. When no user matches the `email` claim but one matches this claim, the user signs in under the alternative address, so account linking attaches SSO to the existing user. |
+
+Existing users are matched by email case-insensitively.
 
 The identity provider must return an `email` claim; sign-in is rejected otherwise. Set `AUTH_CREDENTIALS_LOGIN_ENABLED` to `false` to make the custom provider the only login method.
 

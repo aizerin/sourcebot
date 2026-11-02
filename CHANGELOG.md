@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added a custom OpenID Connect provider for single sign-on, configured through the `AUTH_CUSTOM_*` environment variables.
+- Added `AUTH_CUSTOM_FALLBACK_EMAIL_CLAIM` to link SSO sign-ins to users registered under another email address the identity provider knows.
+
+### Changed
+- Existing users are matched by email case-insensitively when signing in through an identity provider.
 
 ## [4.17.4] - 2026-05-30
 
