@@ -14,6 +14,7 @@ import { render } from '@react-email/render';
 import MagicLinkEmail from './emails/magicLinkEmail';
 import bcrypt from 'bcryptjs';
 import { getEEIdentityProviders } from '@/ee/features/sso/sso';
+import { getCustomOidcProvider, isCustomOidcSignInAllowed } from '@/features/sso/customOidcProvider';
 import { hasEntitlement } from '@sourcebot/shared';
 import { onCreateUser } from '@/lib/authUtils';
 import { getAuditService } from '@/ee/features/audit/factory';
@@ -55,6 +56,11 @@ declare module 'next-auth/jwt' {
 
 export const getProviders = () => {
     const providers: IdentityProvider[] = [...eeIdentityProviders];
+
+    const customOidcProvider = getCustomOidcProvider();
+    if (customOidcProvider) {
+        providers.push(customOidcProvider);
+    }
 
     const smtpConnectionUrl = getSMTPConnectionURL();
     if (smtpConnectionUrl && env.EMAIL_FROM_ADDRESS && env.AUTH_EMAIL_CODE_LOGIN_ENABLED === 'true') {
@@ -239,7 +245,11 @@ const nextAuthResult = NextAuth({
         }
     },
     callbacks: {
-        async signIn({ account }) {
+        async signIn({ user, account }) {
+            if (!isCustomOidcSignInAllowed({ user, account })) {
+                return false;
+            }
+
             const matchingProvider = account
                 ? getProviders().find((p) => getEffectiveProviderId(p.provider) === account.provider)
                 : undefined;

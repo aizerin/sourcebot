@@ -9,6 +9,7 @@ import { DividerSet } from "@/app/components/dividerSet";
 import { ProviderButton } from "@/app/components/providerButton";
 import { AuthSecurityNotice } from "@/app/components/authSecurityNotice";
 import type { IdentityProviderMetadata } from "@/lib/identityProviders";
+import { CUSTOM_OIDC_PROVIDER_ID } from "@/lib/constants";
 import Link from "next/link";
 
 interface AuthMethodSelectorProps {
@@ -68,7 +69,7 @@ export const AuthMethodSelector = ({
                                 return (
                                     <ProviderButton
                                         key={provider.id}
-                                        name={providerInfo.displayName}
+                                        name={provider.id === CUSTOM_OIDC_PROVIDER_ID ? provider.name : providerInfo.displayName}
                                         logo={providerInfo.icon}
                                         onClick={() => {
                                             onSignInWithOauth(provider.id);

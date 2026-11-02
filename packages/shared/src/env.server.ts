@@ -139,6 +139,25 @@ const options = {
         AUTH_CREDENTIALS_LOGIN_ENABLED: booleanSchema.default('true'),
         AUTH_EMAIL_CODE_LOGIN_ENABLED: booleanSchema.default('false'),
 
+        // Custom OpenID Connect provider. Enabled when client id, client secret and issuer are set.
+        AUTH_CUSTOM_CLIENT_ID: z.string().optional(),
+        AUTH_CUSTOM_CLIENT_SECRET: z.string().optional(),
+        AUTH_CUSTOM_ISSUER: z.string().url().optional(),
+        AUTH_CUSTOM_NAME: z.string().default('SSO'),
+        AUTH_CUSTOM_SCOPE: z.string().default('openid email profile'),
+        AUTH_CUSTOM_CLIENT_AUTH_METHOD: z.enum(['client_secret_basic', 'client_secret_post']).default('client_secret_basic'),
+        AUTH_CUSTOM_CHECKS: z.string()
+            .default('pkce,state')
+            .transform(value => value.split(',').map(check => check.trim()).filter(check => check.length > 0))
+            .pipe(z.array(z.enum(['pkce', 'state', 'nonce'])))
+            .describe('Comma separated list of checks performed during the authorization code flow (pkce, state, nonce).'),
+        AUTH_CUSTOM_FETCH_USERINFO: booleanSchema
+            .default('false')
+            .describe('When enabled, the user profile is read from the userinfo endpoint instead of the id token claims.'),
+        AUTH_CUSTOM_ALLOW_ACCOUNT_LINKING: booleanSchema
+            .default('false')
+            .describe('When enabled, a custom provider account is linked to an existing user with the same email address.'),
+
         /**
          * Relative time from now in seconds when to expire the session.
          * 
