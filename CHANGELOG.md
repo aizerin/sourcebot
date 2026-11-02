@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a custom OpenID Connect provider for single sign-on, configured through the `AUTH_CUSTOM_*` environment variables.
+
 ## [4.17.4] - 2026-05-30
 
 ### Changed
