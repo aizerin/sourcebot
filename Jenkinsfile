@@ -1,10 +1,26 @@
 // Builds the CPAS fork image and pushes it to harbor.k8ssb.cpas.cz/sourcebot/sourcebot.
-// Tags: short commit SHA on every build, plus the Git tag (e.g. v4.17.4-cpas.1) on tag builds.
+// Tag builds (e.g. v4.17.4-cpas.1) always publish; branch builds publish only with PUBLISH_IMAGE.
+// Image tags: short commit SHA, plus the Git tag on tag builds.
 String gitProxy = 'http://proxyns.cpas.cz:8080'
 
 properties([
     disableConcurrentBuilds(),
+    parameters([
+        booleanParam(
+            name: 'PUBLISH_IMAGE',
+            defaultValue: false,
+            description: 'Build and push the image to Harbor. Tag builds always publish.',
+        ),
+    ]),
 ])
+
+// params.PUBLISH_IMAGE is null on the first build, before Jenkins registers the parameter.
+boolean publish = env.TAG_NAME || params.PUBLISH_IMAGE == true
+if (!publish) {
+    echo 'Image publishing skipped; build a tag or run with PUBLISH_IMAGE to push an image.'
+    currentBuild.result = 'NOT_BUILT'
+    return
+}
 
 node('docker') {
     String commit
