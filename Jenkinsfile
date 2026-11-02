@@ -13,6 +13,9 @@ node('docker') {
         checkout scm
         // vendor/zoekt is a GitHub submodule; agents reach GitHub only through the corporate proxy.
         sh "git -c http.proxy=${gitProxy} submodule update --init vendor/zoekt"
+        // The agent's umask leaves checked-out files unreadable for others, and COPY keeps those modes.
+        // The container runs as a non-root user, so root-owned files such as entrypoint.sh must be world-readable.
+        sh 'chmod -R a+rX .'
         commit = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
     }
 
